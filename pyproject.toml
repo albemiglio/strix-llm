@@ -1,0 +1,16 @@
+[project]
+name = "strix-llm"
+version = "0.0.1"
+description = "Known-good local LLM inference on the Framework Desktop (Ryzen AI Max+ 395 / Strix Halo)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Alberto Migliorato" }]
+keywords = ["llm", "rocm", "llama.cpp", "strix-halo", "ryzen-ai-max", "framework-desktop"]
+
+[project.scripts]
+strix-llm = "strix_llm.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
