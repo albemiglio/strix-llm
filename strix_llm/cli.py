@@ -2,38 +2,46 @@
 from __future__ import annotations
 
 import argparse
-import platform
-import shutil
 import sys
 
+from . import checks, probe
+from .checks import Status
 
-def _check(name: str, ok: bool, detail: str = "") -> None:
-    mark = "ok" if ok else "--"
-    line = f"  [{mark}] {name}"
-    if detail:
-        line += f": {detail}"
-    print(line)
+_MARKS = {
+    Status.OK: "ok",
+    Status.WARN: "!!",
+    Status.FAIL: "XX",
+    Status.SKIP: "--",
+}
+
+
+def _gather_checks() -> list[checks.Check]:
+    path, rocm_build = probe.detect_llama()
+    return [
+        checks.check_os(probe.detect_system()),
+        checks.check_cpu(probe.detect_cpu_model()),
+        checks.check_memory(probe.detect_total_memory()),
+        checks.check_rocm(probe.detect_rocm_version()),
+        checks.check_llama(path, rocm_build),
+    ]
+
+
+def format_report(check_list: list[checks.Check]) -> str:
+    lines = ["strix-llm doctor\n"]
+    for c in check_list:
+        line = f"  [{_MARKS[c.status]}] {c.name}"
+        if c.detail:
+            line += f": {c.detail}"
+        lines.append(line)
+        if c.fix and c.status is not Status.OK:
+            lines.append(f"         -> {c.fix}")
+    return "\n".join(lines)
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    """Detect the hardware and sanity-check the local setup.
-
-    Early skeleton. On a Framework Desktop this grows into a full validation of
-    the VRAM/GTT split, ROCm version, kernel parameters and the llama.cpp build
-    against a known-good baseline.
-    """
-    print("strix-llm doctor (work in progress)\n")
-    print(f"  system : {platform.system()} {platform.release()} ({platform.machine()})")
-
-    rocminfo = shutil.which("rocminfo")
-    _check("rocminfo", rocminfo is not None, rocminfo or "not found in PATH")
-
-    llama = shutil.which("llama-cli") or shutil.which("main")
-    _check("llama.cpp", llama is not None, llama or "not found in PATH")
-
-    if platform.system() != "Linux":
-        print("\n  note: full detection targets Linux on Ryzen AI Max+ 395 (Strix Halo).")
-    return 0
+    check_list = _gather_checks()
+    print(format_report(check_list))
+    return checks.overall_exit_code(check_list)
 
 
 def cmd_run(args: argparse.Namespace) -> int:
