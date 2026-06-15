@@ -49,3 +49,16 @@ def detect_llama() -> tuple[str | None, bool | None]:
     )
     # Cheaply verifying a ROCm/HIP build is not reliable yet, so report unknown.
     return path, None
+
+
+def detect_gpu_vram_mib() -> int | None:
+    for path in (
+        "/sys/class/drm/card0/device/mem_info_vram_total",
+        "/sys/class/drm/card1/device/mem_info_vram_total",
+    ):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                return int(fh.read().strip()) // (1024 * 1024)
+        except (OSError, ValueError):
+            continue
+    return None

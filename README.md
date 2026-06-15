@@ -14,9 +14,24 @@ strix-llm is the layer that makes that path reproducible and maintained, so you 
 
 It is not another inference engine. It sits on top of ROCm and llama.cpp and does the boring, fiddly integration work nobody wants to redo by hand.
 
+## Usage
+
+```
+strix-llm doctor                          # check the machine and the local setup
+strix-llm list                            # show curated model presets
+strix-llm run llama-3.3-70b               # print the exact llama.cpp command to launch
+strix-llm run llama-3.3-70b --model ~/models/llama-3.3-70b-q4.gguf
+strix-llm bench --parse-file run.log      # tokens/sec from a saved llama.cpp log
+```
+
+Without `--model`, `run` prints the command it would launch and where to get the
+model, so you see exactly what will happen before downloading tens of GB.
+
 ## Status
 
-Early work in progress. The project is being built and validated on a Framework Desktop (Ryzen AI Max+ 395, 128 GB). The CLI skeleton and detection logic come first; presets and the benchmark harness follow.
+Early work in progress. `doctor`, the model presets (`list` / `run`) and llama.cpp
+timing parsing work today; the live model run and published benchmarks land once it
+runs on a Framework Desktop. Built test-first, with no external dependencies.
 
 ## Target hardware
 
@@ -25,10 +40,11 @@ Early work in progress. The project is being built and validated on a Framework 
 
 ## Roadmap
 
-- [ ] `doctor`: hardware and config detection and validation
+- [x] `doctor`: hardware, ROCm and config detection with remediation
+- [x] Model + quant presets and one-command launch (`list` / `run`)
+- [x] Benchmark parsing of llama.cpp timings
 - [ ] Known-good baseline configs (BIOS notes, kernel params, ROCm pinning)
-- [ ] Model + quant presets with one-command launch
-- [ ] Benchmark harness and published results
+- [ ] Published benchmark results measured on real hardware
 - [ ] Quantization / KV-cache tuning for unified memory
 
 ## Maintainer

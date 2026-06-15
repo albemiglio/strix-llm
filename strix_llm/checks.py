@@ -102,5 +102,24 @@ def check_llama(path: str | None, has_rocm_build: bool | None) -> Check:
     )
 
 
+def check_vram_split(gpu_vram_mib: int | None, min_mib: int) -> Check:
+    if gpu_vram_mib is None:
+        return Check(
+            "vram-split",
+            Status.WARN,
+            "could not read the iGPU VRAM allocation",
+            fix="On Strix Halo, set the UMA/GTT split so the iGPU gets a large VRAM pool.",
+        )
+    gib = gpu_vram_mib / 1024
+    if gpu_vram_mib >= min_mib:
+        return Check("vram-split", Status.OK, f"{gib:.0f} GiB allocated to the iGPU")
+    return Check(
+        "vram-split",
+        Status.WARN,
+        f"{gib:.0f} GiB to the iGPU: below the recommended split",
+        fix="Increase the UMA Frame Buffer / GTT split in BIOS for bigger models.",
+    )
+
+
 def overall_exit_code(checks: list[Check]) -> int:
     return 1 if any(c.status is Status.FAIL for c in checks) else 0
