@@ -123,3 +123,10 @@ def check_vram_split(gpu_vram_mib: int | None, min_mib: int) -> Check:
 
 def overall_exit_code(checks: list[Check]) -> int:
     return 1 if any(c.status is Status.FAIL for c in checks) else 0
+
+
+def checks_to_dicts(check_list: list[Check]) -> list[dict]:
+    return [
+        {"name": c.name, "status": c.status.value, "detail": c.detail, "fix": c.fix}
+        for c in check_list
+    ]

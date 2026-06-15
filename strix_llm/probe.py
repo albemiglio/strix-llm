@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import platform
 import shutil
+import subprocess
 
 
 def detect_system() -> str:
@@ -41,14 +42,30 @@ def detect_rocm_version() -> str | None:
         return None
 
 
+def linked_libs_have_rocm(ldd_output: str) -> bool:
+    text = ldd_output.lower()
+    return any(
+        lib in text for lib in ("libhipblas", "librocblas", "libamdhip", "librocm")
+    )
+
+
 def detect_llama() -> tuple[str | None, bool | None]:
     path = (
         shutil.which("llama-cli")
         or shutil.which("llama-server")
         or shutil.which("main")
     )
-    # Cheaply verifying a ROCm/HIP build is not reliable yet, so report unknown.
-    return path, None
+    if path is None:
+        return None, None
+    try:
+        out = subprocess.run(
+            ["ldd", path], capture_output=True, text=True, timeout=5
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return path, None
+    if not out:
+        return path, None
+    return path, linked_libs_have_rocm(out)
 
 
 def detect_gpu_vram_mib() -> int | None:

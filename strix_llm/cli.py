@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import subprocess
 import sys
@@ -45,7 +46,10 @@ def format_report(check_list: list[checks.Check]) -> str:
 
 def cmd_doctor(args: argparse.Namespace) -> int:
     check_list = _gather_checks()
-    print(format_report(check_list))
+    if getattr(args, "json", False):
+        print(json.dumps(checks.checks_to_dicts(check_list), indent=2))
+    else:
+        print(format_report(check_list))
     return checks.overall_exit_code(check_list)
 
 
@@ -62,13 +66,20 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"error: {exc.args[0]}")
         return 1
 
+    budget_gib = baseline.BASELINE.min_gpu_vram_mib / 1024
+    if presets.exceeds_budget(preset, budget_gib):
+        print(
+            f"# warning: ~{preset.approx_vram_gib} GiB may exceed the "
+            f"{budget_gib:.0f} GiB minimum split; raise the UMA/GTT split in BIOS"
+        )
+
     model_path = args.model or f"<model>/{preset.hf_file}"
     cmd = presets.build_command(preset, model_path, host=args.host, port=args.port)
 
     if args.dry_run or not args.model:
         print(" ".join(cmd))
         if not args.model:
-            print(f"\n# download: {preset.hf_repo} :: {preset.hf_file}")
+            print("\n# download:", " ".join(presets.download_command(preset)))
             print("# then re-run with --model <path> to launch")
         return 0
 
@@ -102,6 +113,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
 
     d = sub.add_parser("doctor", help="detect hardware and check the local setup")
+    d.add_argument("--json", action="store_true", help="machine-readable output")
     d.set_defaults(func=cmd_doctor)
 
     ls = sub.add_parser("list", help="list curated model presets")

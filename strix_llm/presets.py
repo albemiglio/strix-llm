@@ -72,3 +72,11 @@ def build_command(
     ]
     cmd.extend(preset.extra_flags)
     return cmd
+
+
+def exceeds_budget(preset: Preset, budget_gib: float) -> bool:
+    return preset.approx_vram_gib > budget_gib
+
+
+def download_command(preset: Preset) -> list[str]:
+    return ["huggingface-cli", "download", preset.hf_repo, preset.hf_file]

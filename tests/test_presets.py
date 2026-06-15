@@ -43,5 +43,36 @@ class BuildCommand(unittest.TestCase):
         self.assertIn("1234", cmd)
 
 
+class BudgetAndDownload(unittest.TestCase):
+    def _preset(self, vram):
+        return Preset(
+            name="t",
+            description="d",
+            hf_repo="org/repo",
+            hf_file="m.gguf",
+            ctx=4096,
+            ngl=99,
+            approx_vram_gib=vram,
+        )
+
+    def test_within_budget(self):
+        from strix_llm.presets import exceeds_budget
+
+        self.assertFalse(exceeds_budget(self._preset(40), 64))
+
+    def test_over_budget(self):
+        from strix_llm.presets import exceeds_budget
+
+        self.assertTrue(exceeds_budget(self._preset(80), 64))
+
+    def test_download_command(self):
+        from strix_llm.presets import download_command
+
+        self.assertEqual(
+            download_command(self._preset(40)),
+            ["huggingface-cli", "download", "org/repo", "m.gguf"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

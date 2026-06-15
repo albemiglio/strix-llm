@@ -87,5 +87,16 @@ class ExitCode(unittest.TestCase):
         self.assertEqual(overall_exit_code([check_cpu("Apple M2")]), 0)
 
 
+class CheckSerialization(unittest.TestCase):
+    def test_serializes_to_plain_dicts(self):
+        from strix_llm.checks import checks_to_dicts
+
+        rows = checks_to_dicts([check_os("Linux"), check_rocm(None)])
+        self.assertEqual(rows[0]["name"], "os")
+        self.assertEqual(rows[0]["status"], "ok")
+        self.assertEqual(rows[1]["status"], "fail")
+        self.assertTrue(rows[1]["fix"])
+
+
 if __name__ == "__main__":
     unittest.main()
